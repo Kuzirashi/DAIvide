@@ -1,0 +1,7 @@
+dist/
+node_modules/
+src/build/
+notifications-service/
+contracts/
+migrations/
+test/

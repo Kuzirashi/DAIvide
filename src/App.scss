@@ -1,29 +1,33 @@
-body{
+$enable-rounded: false;
+
+@import "../node_modules/bootstrap/scss/bootstrap.scss";
+
+body {
   background-color: #f7f7f7;
 }
 
 .App {
   text-align: center;
-}
 
-.App-logo {
-  animation: App-logo-spin infinite 20s linear;
-  height: 80px;
-}
+  &-logo {
+    animation: App-logo-spin infinite 20s linear;
+    height: 80px;
+  }
 
-.App-header {
-  background-color: #222;
-  height: 150px;
-  padding: 20px;
-  color: white;
-}
+  &-header {
+    background-color: #222;
+    height: 150px;
+    padding: 20px;
+    color: white;
+  }
 
-.App-title {
-  font-size: 1.5em;
-}
+  &-title {
+    font-size: 1.5em;
+  }
 
-.App-intro {
-  font-size: large;
+  &-intro {
+    font-size: large;
+  }
 }
 
 @keyframes App-logo-spin {
@@ -31,25 +35,32 @@ body{
   to { transform: rotate(360deg); }
 }
 
-.Wallet{
+.Wallet {
   margin-top: 4em;
   padding: 2em 2em 2em 2em;
   background-color: #fafafa;
   width:600px !important;
+
+  &-container {
+    box-shadow: 1px 6px 11px 0px #00000012;
+  }
+
+  &-body {
+    background-color: #fafafa;
+  }
+
+  .row {
+    margin-top: 0.8em;
+  }
 }
 
-.Wallet .row {
-  margin-top: 0.8em;
-}
-
-.Wallet-body {
-  background-color: #fafafa;
-}
-
-.NewChannel-Container {
-  padding-left:3em;
-  padding-top:3em;
-  padding-right:3em;
+.NewChannel {
+  &-Container {
+    padding-left:3em;
+    padding-top:3em;
+    padding-right:3em;
+    padding-bottom: 4em;
+  }
 }
 
 .Bill {
@@ -59,4 +70,28 @@ body{
   margin-bottom: 40px;
   background: #f8f9fa;
   border: 1px solid #e4e4e4;
+}
+
+.Channel {
+  &-GroupTable {
+    thead {
+      background: whitesmoke;
+      color: #6c757d;
+      box-shadow: 2px -7px 20px -10px rgba(0, 0, 0, 0.13);
+    }
+  }
+}
+
+.btn {
+  &-primary {
+    color: #007bff;
+    background-color: #ffffff;
+    border-color: #007bff;
+  }
+
+  &-danger {
+    color: #dc3545;
+    background-color: white;
+    border-color: #dc3545;
+  }
 }
