@@ -2,10 +2,11 @@
 
 import React, { Component } from 'react';
 import SplitETHJSON from '../build/contracts/SplitETH.json';
-import { NETWORK_ID } from './Channel';
+import { NETWORK_ID } from '../domain/config';
 import BigNumber from 'bignumber.js';
 import { Button, FormGroup, Input, Col } from 'reactstrap';
 import $ from 'jquery';
+import BlockchainService from '../domain/BlockchainService';
 
 export const API_HOST = 'http://ec2-54-93-114-108.eu-central-1.compute.amazonaws.com:3001';
 
@@ -88,7 +89,6 @@ class Expenses extends Component {
 
   async componentDidMount() {
     console.log('ELID', this.state.channelID);
-    await this.getExpenses();
 
     await this.setupContracts();
 
@@ -99,6 +99,8 @@ class Expenses extends Component {
     this.setState({
       group
     });
+
+    await this.getExpenses();
   }
 
   async setupContracts() {
@@ -121,56 +123,26 @@ class Expenses extends Component {
   }
 
   async getGroupById(name) {
-    return new Promise(resolve => {
-      var _this = this;
-      this.state.splitETH_event
-        .getPastEvents(
-          'GroupCreated',
-          {
-            fromBlock: 0,
-            toBlock: 'latest'
-          },
-          function() {}
-        )
-        .then(async function(events) {
-          const groups = [];
+    const groups = await BlockchainService.getGroups(true);
 
-          for (let element of events) {
-            var friends = [];
-            for (let usr of element.returnValues._users) {
-              const result = await _this.state.splitETH.methods
-                .groupBalances(element.returnValues._name, usr)
-                .call();
+    console.log(
+      'groups',
+      groups,
+      'name',
+      name,
+      name === groups[0].name,
+      groups.find(group => group.name === name)
+    );
 
-              friends.push({
-                address: usr,
-                balance: result
-              });
-            }
-
-            groups.push({
-              name: cleanAsciiText(_this.state.web3.utils.toAscii(element.returnValues._name)),
-              friends: friends,
-              timeout: element.returnValues._timeout
-            });
-          }
-
-          console.log(
-            'groups',
-            groups,
-            'name',
-            name,
-            name === groups[0].name,
-            groups.find(group => group.name === name)
-          );
-
-          resolve(groups.find(group => group.name === name));
-        });
-    });
+    return groups.find(group => group.clanName === name);
   }
 
   render() {
     let { bills, channelID, group, newBill } = this.state;
+
+    if (!group) {
+      return 'Loading...';
+    }
 
     console.log('group', group);
 
@@ -230,9 +202,28 @@ class Expenses extends Component {
     console.log('bills', bills);
     console.log('group', group);
 
+    const participantsItems = group.friends.map((participant, i) => {
+      var participantItem = {
+        address: participant.address,
+        balance: participant.balance
+      };
+
+      return (
+        <li key={i}>
+          {participantItem.address} - Balance:{' '}
+          {this.state.web3.utils.fromWei(participant.balance, 'ether')} DAI
+        </li>
+      );
+    });
+
     return (
       <div className="mt-5">
-        <h3>Bills from: {channelID}</h3>
+        <h3>{channelID}</h3>
+        <h4 className="mt-4">Participants:</h4>
+        <br />
+        <ul>{participantsItems}</ul>
+        <h4 className="mt-4">Bills</h4>
+
         <div className="mt-5">
           {bills &&
             bills.map((bill, index) => (

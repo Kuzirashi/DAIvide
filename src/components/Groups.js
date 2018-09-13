@@ -1,23 +1,23 @@
 import React, { Component } from 'react';
 import { BigNumber } from 'bignumber.js';
 import SplitETHJSON from '../build/contracts/SplitETH.json';
-import { Container, Row, Col } from 'reactstrap';
+import { Row, Col } from 'reactstrap';
 import { Button, Form, FormGroup, Label, Input } from 'reactstrap';
 import $ from 'jquery';
 import { cleanAsciiText, toWei } from './Expenses';
+import BlockchainService from '../domain/BlockchainService';
 
 import { Link } from 'react-router-dom';
 import SETokenJSON from '../build/contracts/SEToken.json';
 import { API_HOST } from './Expenses';
-
-export const NETWORK_ID = 42;
+import { NETWORK_ID } from '../domain/config';
 
 const SELECTED_OPTION = {
   ADD_GROUP: 1,
   ADD_BALANCE: 2
 };
 
-class Channel extends Component {
+class Groups extends Component {
   constructor(props) {
     super(props);
 
@@ -42,8 +42,6 @@ class Channel extends Component {
     const seToken_event = new props.web3WH.eth.Contract(SETABI, SETAddress);
     seToken_event.setProvider(props.web3WH.currentProvider);
 
-    window.postGroupToAPI = this.postGroupToAPI;
-
     this.state = {
       web3: props.web3,
       web3WH: props.web3WH,
@@ -64,52 +62,6 @@ class Channel extends Component {
     this.setState({ accounts });
 
     this.getGroups();
-  }
-
-  async getGroups() {
-    const events = await this.state.splitETH_event.getPastEvents('GroupCreated', {
-      fromBlock: 0,
-      toBlock: 'latest'
-    });
-
-    this.setState({
-      groups: []
-    });
-
-    for (let element of events) {
-      var friends = [];
-      for (let address of element.returnValues._users) {
-        const balance = await this.state.splitETH.methods
-          .groupBalances(element.returnValues._name, address)
-          .call();
-
-        friends.push({
-          address,
-          balance
-        });
-      }
-
-      const myBal = await this.state.splitETH.methods
-        .groupBalances(element.returnValues._name, this.state.accounts[0])
-        .call();
-
-      const result2 = await this.state.splitETH.methods
-        .groupCloseTime(element.returnValues._name)
-        .call();
-
-      this.setState({
-        groups: [
-          ...this.state.groups,
-          {
-            name: this.state.web3.utils.toAscii(element.returnValues._name),
-            friends,
-            timeout: element.returnValues._timeout,
-            closed: result2 > 0 ? true : false,
-            myBal
-          }
-        ]
-      });
-    }
   }
 
   async handleSubmitNewChannel(event) {
@@ -197,6 +149,16 @@ class Channel extends Component {
       selectedOption: 2,
       selectedGroup: group
     });
+  }
+
+  async getGroups() {
+    this.setState({
+      groups: []
+    });
+
+    const groups = await BlockchainService.getGroups();
+
+    this.setState({ groups });
   }
 
   async getLastBillSigned(groupName) {
@@ -381,7 +343,7 @@ class Channel extends Component {
       );
     } else if (this.state.selectedOption === SELECTED_OPTION.ADD_BALANCE) {
       return (
-        <Container className="Wallet">
+        <div className="container Wallet Wallet-container">
           <Row>
             <Col sm="12" md={{ size: 8, offset: 2 }}>
               Fund Group
@@ -434,7 +396,7 @@ class Channel extends Component {
               </Form>
             </Col>
           </Row>
-        </Container>
+        </div>
       );
     }
   }
@@ -460,107 +422,78 @@ class Channel extends Component {
     });
   };
 
-  renderGroupList() {
-    const listItems = this.state.groups.map((group, groupIndex) => {
-      const participantsItems = group.friends.map((participant, i) => {
-        var participantItem = {
-          address: participant.address,
-          balance: participant.balance
-        };
-
-        return (
-          <li key={i}>
-            {participantItem.address} - Balance:{' '}
-            {this.state.web3.utils.fromWei(participant.balance, 'ether')} DAI
-          </li>
-        );
-      });
-
-      if (group.closed && group.myBal != 0) {
-        return (
-          <tr key={groupIndex}>
-            <th scope="row">{group.name}</th>
-            <td>{participantsItems}</td>
-            <td>{group.timeout}</td>
-            <td>Group is closed</td>
-            <td>
-              <Link href="" to={'/expenses/' + group.name}>
-                View Expenses
-              </Link>
-            </td>
-            <td>
-              <Button
-                color="info"
-                size="sm"
-                onClick={() => this.handlePullFundsFromChannel(group.name)}
-              >
-                Pull Funds
-              </Button>
-            </td>
-          </tr>
-        );
-      } else if (group.closed && group.myBal == 0) {
-        return (
-          <tr key={groupIndex}>
-            <th scope="row">{group.name}</th>
-            <td>{participantsItems}</td>
-            <td>{group.timeout}</td>
-            <td>Group is closed</td>
-            <td>
-              <Link href="" to={'/expenses/' + group.name}>
-                View Expenses
-              </Link>
-            </td>
-            <td>Balance pulled</td>
-          </tr>
-        );
-      } else {
-        return (
-          <tr key={groupIndex}>
-            <th scope="row">{group.name}</th>
-            <td>{participantsItems}</td>
-            <td>{group.timeout}</td>
-            <td>
-              {' '}
-              <Button color="primary" size="sm" onClick={() => this.handleJoinChannel(group.name)}>
-                Add Balance
-              </Button>
-            </td>
-            <td>
-              <Link href="" to={'/expenses/' + group.name}>
-                Manage Expenses
-              </Link>
-            </td>
-            <td>
-              <div>
-                <Button
-                  color="danger"
-                  size="sm"
-                  onClick={() => this.handleCloseChannel(group.name)}
-                >
-                  CLOSE
-                </Button>
-              </div>
-            </td>
-          </tr>
-        );
+  _getActions(group) {
+    if (group.closed) {
+      if (group.myBal === 0) {
+        return <span>Balance pulled</span>;
       }
-    });
+
+      return (
+        <button
+          className="btn btn-info"
+          onClick={() => this.handlePullFundsFromChannel(group.name)}
+        >
+          Pull Funds
+        </button>
+      );
+    }
 
     return (
-      <table className="table Channel-GroupTable">
-        <thead>
-          <tr>
-            <th>Group Name</th>
-            <th>Participants</th>
-            <th>Timeout</th>
-            <th>Balance</th>
-            <th>Expenses</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>{listItems}</tbody>
-      </table>
+      <button className="btn btn-danger" onClick={() => this.handleCloseChannel(group.name)}>
+        Close
+      </button>
+    );
+  }
+
+  get defaultAccount() {
+    return this.state.accounts && this.state.accounts[0];
+  }
+
+  getBalanceLockedInGroup(group, addressToCheck) {
+    console.log({
+      friends: group.friends,
+      addressToCheck
+    });
+
+    const entry = group.friends.find(
+      entry => entry.address.toLowerCase() === addressToCheck.toLowerCase()
+    );
+
+    if (entry) {
+      return this.state.web3.utils.fromWei(entry.balance, 'ether');
+    }
+
+    return 0;
+  }
+
+  renderGroupList() {
+    return (
+      <div className="Groups">
+        {this.state.groups.map((group, groupIndex) => (
+          <div className="Group-single" key={groupIndex}>
+            <h4>{group.name}</h4>
+            <div className="mt-4">
+              You have locked: {this.getBalanceLockedInGroup(group, this.defaultAccount)} DAI <br />
+            </div>
+            <div className="row text-center d-flex margin-auto Group-actions mt-4">
+              {group.closed ? (
+                <span>Group is closed</span>
+              ) : (
+                <button
+                  className="btn btn-primary"
+                  onClick={() => this.handleJoinChannel(group.name)}
+                >
+                  Add Balance
+                </button>
+              )}
+              <Link to={'/expenses/' + group.name} className="btn btn-primary">
+                Manage
+              </Link>
+              {this._getActions(group)}
+            </div>
+          </div>
+        ))}
+      </div>
     );
   }
 
@@ -581,4 +514,4 @@ class Channel extends Component {
   }
 }
 
-export default Channel;
+export default Groups;

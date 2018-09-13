@@ -6137,8 +6137,24 @@ a.text-dark:hover, a.text-dark:focus {
     color: inherit;
     border-color: #dee2e6; } }
 
-body {
-  background-color: #f7f7f7; }
+.Body-background {
+  background-color: #f7f7f7;
+  /* background: #d8d8d8; */
+  /* width: 100%; */
+  /* max-height: 1080px; */
+  top: 0;
+  /* opacity: .4; */
+  height: 100vw;
+  -webkit-filter: grayscale(0.3);
+  filter: grayscale(0.3);
+  z-index: -1;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position-y: -140px;
+  height: 100vh;
+  position: fixed;
+  width: 100vw; }
 
 .App {
   text-align: center; }
@@ -6201,3 +6217,34 @@ body {
   color: #dc3545;
   background-color: white;
   border-color: #dc3545; }
+
+.Groups {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between; }
+  .Groups .Group-single {
+    background: white;
+    width: 480px;
+    padding: 20px;
+    height: 250px;
+    margin: 14px;
+    box-shadow: 1px 6px 11px 0px #00000012; }
+    @media screen and (min-width: 507px) {
+      .Groups .Group-single {
+        padding: 40px; } }
+  .Groups .Group-actions {
+    justify-content: space-evenly;
+    max-width: 330px;
+    margin: auto; }
+
+.navbar-brand {
+  color: #3893ff;
+  font-size: 24px;
+  margin-left: 44px; }
+
+.dai-button {
+  background: white;
+  color: #6c757d;
+  border: 1px solid #6c757d;
+  position: absolute;
+  right: 60px; }
