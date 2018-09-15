@@ -9,8 +9,8 @@ export const ALL_ADDRESSES = {
     TOKEN: '0x375404e792a7fd8307330020b5c7c54cfc14b08f'
   },
   [PRIVATE_NETWORK_ID]: {
-    SPLITTER: '0x66b96ddd818bec4b76fe5fe5d8908f1cfc13e1b5',
-    TOKEN: '0x6779bbe971f45c44c84eb37a3cc6712533c70efd'
+    SPLITTER: '0x7a5443ddefdb84d46ed098758ee5cb3d5d7f56a0',
+    TOKEN: '0xfecf2a68ffcf01d7451aa26c3be638dc41b9cdf7'
   }
 };
 

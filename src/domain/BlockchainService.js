@@ -2,9 +2,11 @@ import Web3 from 'web3';
 import SplitETHJSON from '../build/contracts/SplitETH.json';
 import SETokenJSON from '../build/contracts/SEToken.json';
 import { NETWORK_ID, ADDRESSES } from './config';
-import { cleanAsciiText } from '../components/Expenses';
+import { cleanAsciiText, toWei } from '../components/Expenses';
+import { observable } from 'mobx';
+import BigNumber from 'bignumber.js';
 
-class BlockchainService {
+class BlockchainServiceClass {
   web3;
   web3WH;
 
@@ -16,10 +18,10 @@ class BlockchainService {
     this.web3 = new Web3(Web3.givenProvider || 'http://kovan.infura.io');
     this.web3WH = new Web3();
 
-    const eventProvider = new Web3.providers.HttpProvider(
+    const eventProvider = new Web3.providers.WebsocketProvider(
       //  'wss://kovan.infura.io/websockets'
       // 'wss://rarely-suitable-shark.quiknode.io/87817da9-942d-4275-98c0-4176eee51e1a/aB5gwSfQdN4jmkS65F1HyA==/'
-      'http://localhost:8545'
+      'ws://localhost:8545'
     );
 
     this.web3WH.setProvider(eventProvider);
@@ -46,6 +48,9 @@ class BlockchainService {
       resolve => (this._initializationPromiseResolver = resolve)
     );
 
+    this.tokenBalance = observable.box(0);
+    this.initialized = observable.box(false);
+
     this._initialize();
   }
 
@@ -56,7 +61,13 @@ class BlockchainService {
   async _initialize() {
     await this.updateAccounts();
     await this.updateCurrentBlock();
+    await this.getGroupCreatedEvents();
     await this.setupUpdateGroupCreatedEventsWatch();
+
+    this.tokenBalance.set(await this.getTokenBalance());
+
+    this.onTokenBalanceUpdate(balance => this.tokenBalance.set(balance));
+    this.initialized.set(true);
 
     this._initializationPromiseResolver();
   }
@@ -77,7 +88,7 @@ class BlockchainService {
   async getGroupCreatedEvents() {
     await this.updateCurrentBlock();
 
-    const GROUP_CREATED_EVENTS_KEY = `${NETWORK_ID}_groupCreatedEvents`;
+    const GROUP_CREATED_EVENTS_KEY = this._getCachedGroupCreatedEventsKey();
     const GROUP_CREATED_EVENTS_LAST_FETCHED_BLOCK_KEY = this._getCachedGroupCreatedEventsLastFetchedBlockKey();
 
     const cachedEvents = window.localStorage.getItem(GROUP_CREATED_EVENTS_KEY);
@@ -97,6 +108,10 @@ class BlockchainService {
     window.localStorage.setItem(GROUP_CREATED_EVENTS_LAST_FETCHED_BLOCK_KEY, this.currentBlock);
 
     return this._groupCreatedEvents;
+  }
+
+  _getCachedGroupCreatedEventsKey() {
+    return `${NETWORK_ID}_groupCreatedEvents`;
   }
 
   _getCachedGroupCreatedEventsLastFetchedBlock() {
@@ -155,13 +170,11 @@ class BlockchainService {
 
   async requestTokensFromFaucet() {
     return await this.seToken.methods
-      .getTokens(this.accounts[0], this.web3.utils.toWei('100000'))
-      .send({ from: this.accounts[0] });
+      .getTokens(this.defaultAccount, this.web3.utils.toWei('100000'))
+      .send({ from: this.defaultAccount });
   }
 
   async getTokenBalance(account) {
-    await this.waitForInitialization();
-
     if (!account) {
       account = this.defaultAccount;
     }
@@ -190,13 +203,32 @@ class BlockchainService {
   }
 
   async setupUpdateGroupCreatedEventsWatch() {
-    const fromBlock = this._getCachedGroupCreatedEventsLastFetchedBlock();
+    const fromBlock = this._getCachedGroupCreatedEventsLastFetchedBlock() + 1;
 
-    console.log('setupUpdate', fromBlock, this.splitETH_event.events);
+    // console.log('setupUpdate', fromBlock, this.splitETH_event.events);
 
-    this.splitETH.events.allEvents({ fromBlock, toBlock: 'latest' }).on('data', async (a, b, c) => {
-      console.log('CALLBACK NEW DATA GROUP CREATED', a, b, c);
+    this.splitETH_event.events.GroupCreated({ fromBlock, toBlock: 'latest' }).on('data', event => {
+      this._addGroupCreatedEventToCache(event);
     });
+  }
+
+  _addGroupCreatedEventToCache(event) {
+    if (this._groupCreatedEvents.find(({ id }) => id === event.id)) {
+      return;
+    }
+
+    const GROUP_CREATED_EVENTS_KEY = this._getCachedGroupCreatedEventsKey();
+    const GROUP_CREATED_EVENTS_LAST_FETCHED_BLOCK_KEY = this._getCachedGroupCreatedEventsLastFetchedBlockKey();
+
+    this._groupCreatedEvents.push(event);
+
+    window.localStorage.setItem(GROUP_CREATED_EVENTS_KEY, JSON.stringify(this._groupCreatedEvents));
+
+    const lastFetchedBlock = this._getCachedGroupCreatedEventsLastFetchedBlock();
+
+    if (lastFetchedBlock < event.blockNumber) {
+      window.localStorage.setItem(GROUP_CREATED_EVENTS_LAST_FETCHED_BLOCK_KEY, event.blockNumber);
+    }
   }
 
   async joinGroup(groupName, user, amount) {
@@ -208,6 +240,154 @@ class BlockchainService {
       .fundUser(groupName, user, this.web3.utils.toWei(amount, 'ether'))
       .send({ from: this.defaultAccount });
   }
+
+  async addNewGroup(groupName, addresses, tokenAddress, expiry) {
+    const receipt = await this.splitETH.methods
+      .createGroup(groupName, addresses, tokenAddress, expiry)
+      .send({ from: this.defaultAccount });
+
+    return receipt;
+  }
+
+  async signBill(groupName, bill) {
+    return new Promise(resolve => {
+      let msgParams = [
+        { type: 'address', name: 'splitETH', value: this.splitETH._address },
+        { type: 'bytes32', name: 'name', value: groupName },
+        { type: 'uint256', name: 'timestamp', value: bill.timestamp }
+        // {type: 'uint256', name: 'amount_0', value: 100},
+        // {type: 'bool', name: 'isCredit_0', value: false},
+        // {type: 'uint256', name: 'amount_1', value: 150},
+        // {type: 'bool', name: 'isCredit_1', value: false},
+        // {type: 'uint256', name: 'amount_2', value: 250},
+        // {type: 'bool', name: 'isCredit_2', value: true},
+      ];
+
+      bill.totalBalanceChange.map((entry, index) => {
+        const sign = parseInt(entry.value) >= 0;
+        const wei = toWei(entry.value).toString();
+
+        console.debug('!!', {
+          sign,
+          wei
+        });
+
+        msgParams.push({
+          type: 'uint256',
+          name: `amount_${index}`,
+          value: wei
+        });
+        msgParams.push({
+          type: 'bool',
+          name: `isCredit_${index}`,
+          value: sign
+        });
+      });
+
+      console.debug({
+        msgParams
+      });
+
+      let from = this.defaultAccount;
+
+      this.web3.currentProvider.sendAsync(
+        {
+          method: 'eth_signTypedData',
+          params: [msgParams, from],
+          from: from
+        },
+        (err, result) => {
+          if (err) return console.error(err);
+          if (result.error) {
+            return console.error(result.error.message);
+          }
+          let res = result.result.slice(2);
+          let r = '0x' + res.substr(0, 64),
+            s = '0x' + res.substr(64, 64),
+            v = parseInt(res.substr(128, 2), 16);
+          console.log(v, r, s);
+
+          resolve({
+            from,
+            v,
+            r,
+            s
+          });
+        }
+      );
+    });
+  }
+
+  async closeGroup(name, lastBillSigned, participants) {
+    console.debug('handleCloseChannel', {
+      lastBillSigned
+    });
+
+    console.log(name);
+
+    const addressMapping = {};
+
+    const vArray = [];
+    const rArray = [];
+    const sArray = [];
+    const weiArray = [];
+    const signArray = [];
+
+    lastBillSigned.signatures.map(signature => {
+      addressMapping[signature.signer.toLowerCase()] = signature;
+    });
+
+    lastBillSigned.totalBalanceChange.map(entry => {
+      const sign = parseInt(entry.value) >= 0;
+      const wei = toWei(entry.value)
+        .absoluteValue()
+        .toString();
+
+      console.debug('!!', {
+        sign,
+        wei
+      });
+
+      addressMapping[entry.address.toLowerCase()].wei = wei;
+      addressMapping[entry.address.toLowerCase()].sign = sign;
+    });
+
+    for (let participant of participants) {
+      const entry = addressMapping[participant.address.toLowerCase()];
+
+      vArray.push(entry.v);
+      rArray.push(entry.r);
+      sArray.push(entry.s);
+      weiArray.push(new BigNumber(entry.wei).absoluteValue().toString());
+      signArray.push(entry.sign);
+    }
+
+    const parameters = [
+      this.web3.utils.fromAscii(name),
+      weiArray,
+      signArray,
+      lastBillSigned.timestamp,
+      vArray,
+      rArray,
+      sArray
+    ];
+
+    console.log('closeChannel', parameters);
+
+    const receipt = await this.splitETH.methods
+      .closeGroup(...parameters)
+      .send({ from: this.defaultAccount });
+
+    console.log(receipt);
+
+    return receipt;
+  }
+
+  async withdrawFundsFromGroup(group) {
+    return await this.splitETH.methods
+      .pullFunds(this.web3.utils.fromAscii(group))
+      .send({ from: this.defaultAccount });
+  }
 }
 
-export default new BlockchainService();
+export default new BlockchainServiceClass();

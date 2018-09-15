@@ -1,56 +1,24 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
-import BlockchainService from '../domain/BlockchainService';
-import toastr from 'toastr';
+import { inject, observer } from 'mobx-react';
 
 class NavBar extends Component {
-  state = {
-    tokenBalance: 0
-  };
-
-  constructor() {
-    super();
-
-    this.handleGetTokens = this.handleGetTokens.bind(this);
-  }
-
-  async handleGetTokens() {
-    await BlockchainService.requestTokensFromFaucet();
-
-    await this.updateTokenBalance();
-
-    toastr.success(`Your tokens balance has been updated.`);
-  }
-
-  async updateTokenBalance() {
-    const tokenBalance = await BlockchainService.getTokenBalance();
-
-    this.setState({ tokenBalance });
-  }
-
-  async componentDidMount() {
-    await this.updateTokenBalance();
-
-    BlockchainService.onTokenBalanceUpdate(tokenBalance => {
-      this.setState({ tokenBalance });
-    });
-  }
-
   render() {
     return (
       <nav className="navbar navbar-expand-md">
         <div className="container relative">
-          <div className="row">
-            <Link to="/" className="navbar-brand">
-              DAIvide
-            </Link>
-            <button
-              className="btn btn-primary dai-button text-right"
-              onClick={this.handleGetTokens}
-            >
-              {' '}
-              {this.state.tokenBalance} DAI{' '}
-            </button>
+          <div className="row w-100">
+            <div className="col-6">
+              <Link to="/" className="navbar-brand">
+                <b>DAI</b>
+                vide
+              </Link>
+            </div>
+            <div className="col-6 text-right dai-row">
+              <div className="dai-button">
+                <i className="dai-symbol" /> {this.props.blockchainService.tokenBalance.get()} DAI{' '}
+              </div>
+            </div>
           </div>
         </div>
       </nav>
@@ -58,4 +26,4 @@ class NavBar extends Component {
   }
 }
 
-export default NavBar;
+export default inject('blockchainService')(observer(NavBar));

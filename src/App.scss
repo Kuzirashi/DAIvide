@@ -44,8 +44,6 @@ body {
 }
 
 .App {
-  text-align: center;
-
   &-logo {
     animation: App-logo-spin infinite 20s linear;
     height: 80px;
@@ -73,10 +71,8 @@ body {
 }
 
 .Wallet {
-  margin-top: 4em;
   padding: 2em 2em 2em 2em;
-  background-color: #fafafa;
-  width:600px !important;
+  background-color: white;
 
   &-container {
     // box-shadow: 1px 6px 11px 0px #00000012;
@@ -113,16 +109,36 @@ body {
 
 .btn {
   &-primary {
+    $gradientCol1: #368082;
+    $gradientCol2: #559fa0;
+
     color: #ffffff;
     background-color: #ffffff;
     border-color: $primaryColor2;
     background: $primaryColor2;
+    background: linear-gradient(90deg, $gradientCol1 0%, $gradientCol2 100%);
 
-    &:hover {
-      background: $primaryColor2;
+    &:hover, &:active, &:focus {
+      background: linear-gradient(90deg, darken($gradientCol1, 10%) 0%, darken($gradientCol2, 10%) 100%);
       border-color: $primaryColor2;
+      box-shadow: none;
+    }
+
+    &.alt {
+      color: $primaryColor2;
+      background: white;
+      border: 1px solid $primaryColor2;
+
+      &:hover, &:active, &:focus {
+        color: white !important;
+        border: 1px solid $primaryColor2 !important;
+        background: $primaryColor2 !important;
+        box-shadow: none !important;
+      }
     }
   }
+
+
 
   &-danger {
     // color: #dc3545;
@@ -133,6 +149,19 @@ body {
     &:hover {
       background: #b36b6b;
       border-color: #b36b6b;
+    }
+
+    &.alt {
+      color: #b36b6b;
+      background-color: white;
+      border: 1px solid #b36b6b;
+
+      &:hover, &:active, &:focus {
+        color: white !important;
+        background: #b36b6b !important;
+        border: 1px solid #b36b6b;
+        box-shadow: none !important;
+      }
     }
   }
 
@@ -162,6 +191,7 @@ body {
       margin: 20px;
       // box-shadow: 1px 6px 11px 0px #00000012;
       box-shadow: 1px 2px 0px 0px #00000012;
+      text-align: center;
 
       &-title {
         color: $primaryColor2;
@@ -209,6 +239,7 @@ body {
 
   &:hover {
     color: white;
+    background: darken($primaryColor, 5%);
   }
 }
 
@@ -263,6 +294,7 @@ body {
   color: $primaryColor2;
   background: #ffffff;
   box-shadow: 1px 2px 0px 0px #00000012;
+  margin-bottom: 20px;
 
   &__icon {
     width: 100px;
@@ -285,11 +317,25 @@ body {
   }
 
   &__action {
+    $gradientCol1: #368082;
+    $gradientCol2: #559fa0;
+
+    background: linear-gradient(90deg, $gradientCol1 0%, $gradientCol2 100%);
+
     border-left: solid 1px #efefef;
     text-transform: uppercase;
-    background: linear-gradient(0deg, #002133 0%, #591f23 100%);
+    // background: linear-gradient(0deg, #002133 0%, #591f23 100%);
     align-items: center;
     display: flex;
+    background: linear-gradient(0deg, #368082 0%, #559fa0 100%);
+    padding: 0 40px;
+    color: white;
+    cursor: pointer;
+
+    &:hover {
+      // background: linear-gradient(0deg, darken(#368082, 10%) 0%, darken(#559fa0, 10%) 100%);
+      background: linear-gradient(90deg, darken($gradientCol1, 10%) 0%, darken($gradientCol2, 10%) 100%);
+    }
 
     a {
       font-size: 0.8rem;
@@ -309,5 +355,38 @@ body {
   &-primary {
     color: #fff;
     background-color: $primaryColor2;
+  }
+}
+
+.toast {
+  box-shadow: 1px 2px 0px 0px #00000012 !important;
+  border-radius: 0 !important;
+  opacity: 1 !important;
+
+  &-success {
+    background-color: $primaryColor2 !important;
+  }
+}
+
+.dai-symbol {
+  background: url('/images/dai-2.svg');
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  background-size: contain;
+  vertical-align: text-bottom;
+}
+
+.dai-row {
+  line-height: 36px;
+  color: #559fa0;
+}
+
+.Expenses {
+  &-Group {
+    &-title {
+      color: $primaryColor;
+      font-weight: 400;
+    }
   }
 }

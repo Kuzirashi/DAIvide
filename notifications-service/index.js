@@ -16,7 +16,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 // endregion
 
-mongoose.connect('mongodb://localhost/test');
+mongoose.connect('mongodb://localhost/test1');
 
 const BalanceEntrySchema = Schema({
   address: String,

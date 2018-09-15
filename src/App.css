@@ -6353,20 +6353,21 @@ body {
   background-position: 0 0, 0 0, 40px 70px, 40px 70px, 0 0, 40px 70px;
   opacity: 0.1; }
 
-.App {
-  text-align: center; }
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-    height: 80px; }
-  .App-header {
-    background-color: #222;
-    height: 150px;
-    padding: 20px;
-    color: white; }
-  .App-title {
-    font-size: 1.5em; }
-  .App-intro {
-    font-size: large; }
+.App-logo {
+  animation: App-logo-spin infinite 20s linear;
+  height: 80px; }
+
+.App-header {
+  background-color: #222;
+  height: 150px;
+  padding: 20px;
+  color: white; }
+
+.App-title {
+  font-size: 1.5em; }
+
+.App-intro {
+  font-size: large; }
 
 @keyframes App-logo-spin {
   from {
@@ -6375,10 +6376,8 @@ body {
     transform: rotate(360deg); } }
 
 .Wallet {
-  margin-top: 4em;
   padding: 2em 2em 2em 2em;
-  background-color: #fafafa;
-  width: 600px !important; }
+  background-color: white; }
   .Wallet-container {
     box-shadow: 1px 2px 0px 0px #00000012; }
   .Wallet-body {
@@ -6403,10 +6402,21 @@ body {
   color: #ffffff;
   background-color: #ffffff;
   border-color: #559fa0;
-  background: #559fa0; }
-  .btn-primary:hover {
-    background: #559fa0;
-    border-color: #559fa0; }
+  background: #559fa0;
+  background: linear-gradient(90deg, #368082 0%, #559fa0 100%); }
+  .btn-primary:hover, .btn-primary:active, .btn-primary:focus {
+    background: linear-gradient(90deg, #275d5e 0%, #437e7f 100%);
+    border-color: #559fa0;
+    box-shadow: none; }
+  .btn-primary.alt {
+    color: #559fa0;
+    background: white;
+    border: 1px solid #559fa0; }
+    .btn-primary.alt:hover, .btn-primary.alt:active, .btn-primary.alt:focus {
+      color: white !important;
+      border: 1px solid #559fa0 !important;
+      background: #559fa0 !important;
+      box-shadow: none !important; }
 
 .btn-danger {
   color: white;
@@ -6415,6 +6425,15 @@ body {
   .btn-danger:hover {
     background: #b36b6b;
     border-color: #b36b6b; }
+  .btn-danger.alt {
+    color: #b36b6b;
+    background-color: white;
+    border: 1px solid #b36b6b; }
+    .btn-danger.alt:hover, .btn-danger.alt:active, .btn-danger.alt:focus {
+      color: white !important;
+      background: #b36b6b !important;
+      border: 1px solid #b36b6b;
+      box-shadow: none !important; }
 
 .btn-primary, .btn-danger {
   line-height: 24px;
@@ -6434,7 +6453,8 @@ body {
     padding: 20px;
     height: 250px;
     margin: 20px;
-    box-shadow: 1px 2px 0px 0px #00000012; }
+    box-shadow: 1px 2px 0px 0px #00000012;
+    text-align: center; }
     .Groups .Group-single-title {
       color: #559fa0; }
     .Groups .Group-single-subtitle {
@@ -6461,7 +6481,8 @@ body {
   padding: 0 10px;
   font-weight: 300; }
   .navbar-brand:hover {
-    color: white; }
+    color: white;
+    background: #1e9c9e; }
 
 .dai-button {
   display: block;
@@ -6495,7 +6516,8 @@ body {
   display: flex;
   color: #559fa0;
   background: #ffffff;
-  box-shadow: 1px 2px 0px 0px #00000012; }
+  box-shadow: 1px 2px 0px 0px #00000012;
+  margin-bottom: 20px; }
   .widget-alert__icon {
     width: 100px;
     padding: 20px;
@@ -6511,11 +6533,17 @@ body {
     align-items: center;
     display: flex; }
   .widget-alert__action {
+    background: linear-gradient(90deg, #368082 0%, #559fa0 100%);
     border-left: solid 1px #efefef;
     text-transform: uppercase;
-    background: linear-gradient(0deg, #002133 0%, #591f23 100%);
     align-items: center;
-    display: flex; }
+    display: flex;
+    background: linear-gradient(0deg, #368082 0%, #559fa0 100%);
+    padding: 0 40px;
+    color: white;
+    cursor: pointer; }
+    .widget-alert__action:hover {
+      background: linear-gradient(90deg, #275d5e 0%, #437e7f 100%); }
     .widget-alert__action a {
       font-size: 0.8rem;
       color: #ffffff;
@@ -6528,3 +6556,26 @@ body {
 .badge-primary {
   color: #fff;
   background-color: #559fa0; }
+
+.toast {
+  box-shadow: 1px 2px 0px 0px #00000012 !important;
+  border-radius: 0 !important;
+  opacity: 1 !important; }
+  .toast-success {
+    background-color: #559fa0 !important; }
+
+.dai-symbol {
+  background: url("/images/dai-2.svg");
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  background-size: contain;
+  vertical-align: text-bottom; }
+
+.dai-row {
+  line-height: 36px;
+  color: #559fa0; }
+
+.Expenses-Group-title {
+  color: #22b1b3;
+  font-weight: 400; }

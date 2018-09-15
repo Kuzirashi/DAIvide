@@ -5,8 +5,9 @@ import BigNumber from 'bignumber.js';
 import { FormGroup, Input, Col } from 'reactstrap';
 import $ from 'jquery';
 import BlockchainService from '../domain/BlockchainService';
+import { observer, inject } from 'mobx-react';
 
-export const API_HOST = 'http://ec2-54-93-114-108.eu-central-1.compute.amazonaws.com:3001';
+export const API_HOST = 'http://localhost:3001';
 
 export const cleanAsciiText = text => text && text.replace(/[\x00-\x09\x0b-\x1F]/g, '').trim();
 
@@ -107,7 +108,7 @@ class Expenses extends Component {
     let { bills, channelID, group, newBill } = this.state;
 
     if (!group) {
-      return 'Loading...';
+      return <div className="mt-5">Loading...</div>;
     }
 
     console.log('group', group);
@@ -183,157 +184,157 @@ class Expenses extends Component {
     });
 
     return (
-      <div className="container white-container mt-5">
-        <h3>{channelID}</h3>
+      <div className="container mt-5">
+        <h3 className="Expenses-Group-title">{channelID}</h3>
 
-        <div className="row mt-5">
-          <div className="col">
-            <div className="row">
+        <div className="white-container">
+          <div className="row mt-5">
+            <div className="col">
               <div className="text-left text-bold">Info</div>
+              <div className="mt-3">Timeout: {group.timeout}</div>
             </div>
-            <div className="row mt-3">Timeout: {group.timeout}</div>
-            <div className="row mt-2">Actions:</div>
-          </div>
-          <div className="col">
-            <div className="row">
+            <div className="col">
               <div className="text-left text-bold">Participants</div>
+              <br />
+              <div className="mt-3">
+                <table className="table Participants-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Balance</th>
+                    </tr>
+                  </thead>
+                  <tbody>{participantsItems}</tbody>
+                </table>
+              </div>
             </div>
-            <div className="row mt-3">
-              <table className="table Participants-table">
+          </div>
+
+          <h4 className="mt-4">Expenses</h4>
+
+          <div className="mt-5">
+            {bills &&
+              bills.map((bill, index) => (
+                <div className="Bill" key={index}>
+                  <div className="Bill-name">
+                    <h5>
+                      #{index + 1}. Name: {bill.name}
+                    </h5>
+                    <br />
+                    Total amount paid: {printNumber(bill.totalAmount)}
+                    <br />
+                    <table className="table mt-2">
+                      <thead>
+                        <tr>
+                          <th>Member</th>
+                          <th>Spent</th>
+                          <th>Paid</th>
+                          <th>Balance</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {bill.detailed &&
+                          bill.detailed.map((entry, index) => (
+                            <tr key={index}>
+                              <td>{getAddressName(entry.address)}</td>
+                              <td>{printNumber(entry.spent)}</td>
+                              <td>{printNumber(entry.paid)}</td>
+                              <td>{printNumber(entry.balance)}</td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                    <br />
+                    <br />
+                    Signed by:&nbsp;
+                    {bill.signatures.map((signature, index) => (
+                      <span key={index}>
+                        {getAddressName(signature.signer, false)}
+                        {index + 1 !== bill.signatures.length ? ',' : ''}
+                        &nbsp;
+                      </span>
+                    ))}
+                    <br />
+                    {bill.isSignable && (
+                      <button className="btn btn-primary mt-3" onClick={() => this.signMsg(bill)}>
+                        Sign
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+          </div>
+          <div className="row mt-4">
+            <div className="col">
+              <button className="btn btn-primary" onClick={this.addBill}>
+                Add
+              </button>
+            </div>
+          </div>
+          {this.state.addingBill && (
+            <div className="Bill mt-4">
+              <FormGroup row>
+                <Col sm={12}>
+                  <Input
+                    type="text"
+                    placeholder={`Name of the expense`}
+                    value={newBill.name}
+                    onChange={this.handleNewBillChange('name')}
+                  />
+                </Col>
+              </FormGroup>
+              <FormGroup row>
+                <Col sm={12}>
+                  <Input
+                    type="text"
+                    placeholder={`Total amount paid`}
+                    value={newBill.totalAmount}
+                    onChange={this.handleNewBillChange('totalAmount')}
+                  />
+                </Col>
+              </FormGroup>
+
+              <table className="table mt-2">
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Balance</th>
+                    <th>Member</th>
+                    <th>Spent</th>
+                    <th>Paid</th>
                   </tr>
                 </thead>
-                <tbody>{participantsItems}</tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <h4 className="mt-4">Expenses</h4>
-
-        <div className="mt-5">
-          {bills &&
-            bills.map((bill, index) => (
-              <div className="Bill" key={index}>
-                <div className="Bill-name">
-                  <h5>
-                    #{index + 1}. Name: {bill.name}
-                  </h5>
-                  <br />
-                  Total amount paid: {printNumber(bill.totalAmount)}
-                  <br />
-                  <table className="table mt-2">
-                    <thead>
-                      <tr>
-                        <th>Member</th>
-                        <th>Spent</th>
-                        <th>Paid</th>
-                        <th>Balance</th>
+                <tbody>
+                  {group &&
+                    group.friends &&
+                    group.friends.map((friend, index) => (
+                      <tr key={index}>
+                        <td>{getAddressName(friend.address)}</td>
+                        <td>
+                          <Input
+                            type="text"
+                            placeholder={`Spent`}
+                            value={newBill.parts[index].value}
+                            onChange={this.handleNewBillMemberChange(index, 'parts')}
+                          />
+                        </td>
+                        <td>
+                          <Input
+                            type="text"
+                            placeholder={`Paid`}
+                            value={newBill.payments[index].value}
+                            onChange={this.handleNewBillMemberChange(index, 'payments')}
+                          />
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {bill.detailed &&
-                        bill.detailed.map((entry, index) => (
-                          <tr key={index}>
-                            <td>{getAddressName(entry.address)}</td>
-                            <td>{printNumber(entry.spent)}</td>
-                            <td>{printNumber(entry.paid)}</td>
-                            <td>{printNumber(entry.balance)}</td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                  <br />
-                  <br />
-                  Signed by:&nbsp;
-                  {bill.signatures.map((signature, index) => (
-                    <span key={index}>
-                      {getAddressName(signature.signer, false)}
-                      {index + 1 !== bill.signatures.length ? ',' : ''}
-                      &nbsp;
-                    </span>
-                  ))}
-                  <br />
-                  {bill.isSignable && (
-                    <button className="btn btn-primary mt-3" onClick={() => this.signMsg(bill)}>
-                      Sign
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
+                    ))}
+                </tbody>
+              </table>
+              <button onClick={this.submitNewBill} className="btn btn-primary">
+                Submit
+              </button>
+            </div>
+          )}
+          <br />
         </div>
-        <div className="mt-4 text-right" style={{ maxWidth: '90%' }}>
-          <button className="btn btn-primary" onClick={this.addBill}>
-            Add
-          </button>
-        </div>
-        {this.state.addingBill && (
-          <div className="Bill mt-4">
-            <FormGroup row>
-              <Col sm={12}>
-                <Input
-                  type="text"
-                  placeholder={`Name of the expense`}
-                  value={newBill.name}
-                  onChange={this.handleNewBillChange('name')}
-                />
-              </Col>
-            </FormGroup>
-            <FormGroup row>
-              <Col sm={12}>
-                <Input
-                  type="text"
-                  placeholder={`Total amount paid`}
-                  value={newBill.totalAmount}
-                  onChange={this.handleNewBillChange('totalAmount')}
-                />
-              </Col>
-            </FormGroup>
-
-            <table className="table mt-2">
-              <thead>
-                <tr>
-                  <th>Member</th>
-                  <th>Spent</th>
-                  <th>Paid</th>
-                </tr>
-              </thead>
-              <tbody>
-                {group &&
-                  group.friends &&
-                  group.friends.map((friend, index) => (
-                    <tr key={index}>
-                      <td>{getAddressName(friend.address)}</td>
-                      <td>
-                        <Input
-                          type="text"
-                          placeholder={`Spent`}
-                          value={newBill.parts[index].value}
-                          onChange={this.handleNewBillMemberChange(index, 'parts')}
-                        />
-                      </td>
-                      <td>
-                        <Input
-                          type="text"
-                          placeholder={`Paid`}
-                          value={newBill.payments[index].value}
-                          onChange={this.handleNewBillMemberChange(index, 'payments')}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-            <button onClick={this.submitNewBill} className="btn btn-primary">
-              Submit
-            </button>
-          </div>
-        )}
-        <br />
       </div>
     );
   }
@@ -459,71 +460,18 @@ class Expenses extends Component {
     });
   }
 
-  signMsg(bill) {
-    let msgParams = [
-      { type: 'address', name: 'splitETH', value: this.state.splitETH._address },
-      { type: 'bytes32', name: 'name', value: this.state.channelID },
-      { type: 'uint256', name: 'timestamp', value: bill.timestamp }
-      // {type: 'uint256', name: 'amount_0', value: 100},
-      // {type: 'bool', name: 'isCredit_0', value: false},
-      // {type: 'uint256', name: 'amount_1', value: 150},
-      // {type: 'bool', name: 'isCredit_1', value: false},
-      // {type: 'uint256', name: 'amount_2', value: 250},
-      // {type: 'bool', name: 'isCredit_2', value: true},
-    ];
-
-    bill.totalBalanceChange.map((entry, index) => {
-      const sign = parseInt(entry.value) >= 0;
-      const wei = toWei(entry.value).toString();
-
-      console.debug('!!', {
-        sign,
-        wei
-      });
-
-      msgParams.push({
-        type: 'uint256',
-        name: `amount_${index}`,
-        value: wei
-      });
-      msgParams.push({
-        type: 'bool',
-        name: `isCredit_${index}`,
-        value: sign
-      });
-    });
-
-    console.debug({
-      msgParams
-    });
-
-    let from = this.state.accounts[0];
-
-    this.state.web3.currentProvider.sendAsync(
-      {
-        method: 'eth_signTypedData',
-        params: [msgParams, from],
-        from: from
-      },
-      (err, result) => {
-        if (err) return console.error(err);
-        if (result.error) {
-          return console.error(result.error.message);
-        }
-        let res = result.result.slice(2);
-        let r = '0x' + res.substr(0, 64),
-          s = '0x' + res.substr(64, 64),
-          v = parseInt(res.substr(128, 2), 16);
-        console.log(v, r, s);
-
-        this.submitSignature(bill, {
-          signer: from.toLowerCase(),
-          v,
-          r,
-          s
-        });
-      }
+  async signMsg(bill) {
+    const { from, v, r, s } = await this.props.blockchainService.signBill(
+      this.state.channelID,
+      bill
     );
+
+    await this.submitSignature(bill, {
+      signer: from.toLowerCase(),
+      v,
+      r,
+      s
+    });
   }
 
   submitSignature(bill, signature) {
@@ -537,4 +485,4 @@ class Expenses extends Component {
   }
 }
 
-export default Expenses;
+export default inject('blockchainService')(observer(Expenses));
