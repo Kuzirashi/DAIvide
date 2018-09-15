@@ -31,16 +31,36 @@ body {
     position: fixed;
     width: 100vw;
     background-color:#556;
-    background-image: linear-gradient(30deg, #445 12%, transparent 12.5%, transparent 87%, #445 87.5%, #445),
-    linear-gradient(150deg, #445 12%, transparent 12.5%, transparent 87%, #445 87.5%, #445),
-    linear-gradient(30deg, #445 12%, transparent 12.5%, transparent 87%, #445 87.5%, #445),
-    linear-gradient(150deg, #445 12%, transparent 12.5%, transparent 87%, #445 87.5%, #445),
-    linear-gradient(60deg, #99a 25%, transparent 25.5%, transparent 75%, #99a 75%, #99a),
-    linear-gradient(60deg, #99a 25%, transparent 25.5%, transparent 75%, #99a 75%, #99a);
-    background-size:80px 140px;
-    background-position: 0 0, 0 0, 40px 70px, 40px 70px, 0 0, 40px 70px;
-    opacity: 0.1;
+    // background-image: linear-gradient(30deg, #445 12%, transparent 12.5%, transparent 87%, #445 87.5%, #445),
+    // linear-gradient(150deg, #445 12%, transparent 12.5%, transparent 87%, #445 87.5%, #445),
+    // linear-gradient(30deg, #445 12%, transparent 12.5%, transparent 87%, #445 87.5%, #445),
+    // linear-gradient(150deg, #445 12%, transparent 12.5%, transparent 87%, #445 87.5%, #445),
+    // linear-gradient(60deg, #99a 25%, transparent 25.5%, transparent 75%, #99a 75%, #99a),
+    // linear-gradient(60deg, #99a 25%, transparent 25.5%, transparent 75%, #99a 75%, #99a);
+    // background-size:80px 140px;
+    // background-position: 0 0, 0 0, 40px 70px, 40px 70px, 0 0, 40px 70px;
+    background: url('/images/road.jpg');
+    opacity: 0.25;
+    filter: grayscale(1);
+    z-index: 0;
   }
+
+  &-background-2 {
+    background: linear-gradient(0deg, #ff000000 0%, #e0e0e0 100%);
+    width: 100%;
+    height: 100vh;
+    position: fixed;
+    z-index: 1;
+  }
+}
+
+#root {
+  z-index: 3;
+  position: relative;
+}
+
+.background {
+  z-index: -1;
 }
 
 .App {
@@ -90,7 +110,6 @@ body {
 
 .Bill {
   padding: 20px;
-  max-width: 80%;
   margin: auto;
   margin-bottom: 40px;
   background: #f8f9fa;
@@ -141,25 +160,27 @@ body {
 
 
   &-danger {
+    $color: #464646;
+
     // color: #dc3545;
     color: white;
-    background-color: #b36b6b;
-    border-color: #b36b6b;
+    background-color: $color;
+    border-color: $color;
 
     &:hover {
-      background: #b36b6b;
-      border-color: #b36b6b;
+      background: $color;
+      border-color: $color;
     }
 
     &.alt {
-      color: #b36b6b;
+      color: $color;
       background-color: white;
-      border: 1px solid #b36b6b;
+      border: 1px solid $color;
 
       &:hover, &:active, &:focus {
         color: white !important;
-        background: #b36b6b !important;
-        border: 1px solid #b36b6b;
+        background: $color !important;
+        border: 1px solid $color;
         box-shadow: none !important;
       }
     }
@@ -389,4 +410,9 @@ body {
       font-weight: 400;
     }
   }
+}
+
+.brand-subtitle {
+  color: #398485;
+  font-weight: 300;
 }

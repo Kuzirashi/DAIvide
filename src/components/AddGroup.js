@@ -31,11 +31,13 @@ class AddGroup extends Component {
             <Col sm="12">
               <Form onSubmit={this.handleSubmitNewChannel}>
                 <FormGroup row>
-                  <Label for="GroupName" sm={2}>
-                    Group Name:{' '}
-                  </Label>
-                  <Col sm={10}>
-                    <Input type="text" name="GroupName" placeholder="Name" />
+                  <Col>
+                    <input
+                      type="text"
+                      name="GroupName"
+                      placeholder="Name"
+                      className="form-control"
+                    />
                   </Col>
                 </FormGroup>
 
@@ -62,13 +64,15 @@ class AddGroup extends Component {
                     </FormGroup>
                   </div>
                 ))}
-                <FormGroup row>
-                  <Button type="button" onClick={this.handleAddFriend} className="small">
-                    Add Friend
-                  </Button>
-                </FormGroup>
+                <button
+                  className="btn btn-primary alt"
+                  type="button"
+                  onClick={this.handleAddFriend}
+                >
+                  Add Friend
+                </button>
 
-                <FormGroup row>
+                <FormGroup row style={{ display: 'none' }}>
                   <Label for="TokenAddress" sm={2}>
                     DAI Token Address:{' '}
                   </Label>

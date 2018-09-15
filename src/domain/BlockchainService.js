@@ -153,12 +153,15 @@ class BlockchainServiceClass {
 
       const name = this.web3.utils.toAscii(element.returnValues._name);
 
+      const timestamp = await this.getTimestampFromBlock(element.blockNumber);
+
       const groupToAdd = {
         name,
         clanName: cleanAsciiText(name),
         friends,
         timeout: element.returnValues._timeout,
-        closed: result2 > 0 ? true : false,
+        closed: result2 > 0,
+        timestamp,
         myBal
       };
 
@@ -166,6 +169,19 @@ class BlockchainServiceClass {
     }
 
     return groups;
+  }
+
+  async getTimestampFromBlock(block) {
+    return new Promise(resolve => {
+      console.log(block, 'asd');
+      this.web3.eth.getBlock(block, (error, data) => {
+        console.log('getBlock', {
+          error,
+          data
+        });
+        resolve(data.timestamp);
+      });
+    });
   }
 
   async requestTokensFromFaucet() {

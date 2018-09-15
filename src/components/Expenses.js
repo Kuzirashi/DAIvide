@@ -6,6 +6,7 @@ import { FormGroup, Input, Col } from 'reactstrap';
 import $ from 'jquery';
 import BlockchainService from '../domain/BlockchainService';
 import { observer, inject } from 'mobx-react';
+import moment from 'moment';
 
 export const API_HOST = 'http://localhost:3001';
 
@@ -70,8 +71,6 @@ class Expenses extends Component {
   }
 
   async componentDidMount() {
-    console.log('ELID', this.state.channelID);
-
     const accounts = await this.props.web3.eth.getAccounts();
 
     this.setState({
@@ -79,8 +78,6 @@ class Expenses extends Component {
     });
 
     const group = await this.getGroupById(this.state.channelID);
-
-    console.log('setstate', group);
 
     this.setState({
       group
@@ -108,7 +105,13 @@ class Expenses extends Component {
     let { bills, channelID, group, newBill } = this.state;
 
     if (!group) {
-      return <div className="mt-5">Loading...</div>;
+      return (
+        <div className="container mt-5">
+          <div className="row">
+            <div className="col">Loading...</div>
+          </div>
+        </div>
+      );
     }
 
     console.log('group', group);
@@ -183,8 +186,11 @@ class Expenses extends Component {
       );
     });
 
+    window.moment = moment;
+    console.log('group.time', group.timestamp);
+
     return (
-      <div className="container mt-5">
+      <div className="container mt-5 pb-5">
         <h3 className="Expenses-Group-title">{channelID}</h3>
 
         <div className="white-container">
@@ -192,6 +198,8 @@ class Expenses extends Component {
             <div className="col">
               <div className="text-left text-bold">Info</div>
               <div className="mt-3">Timeout: {group.timeout}</div>
+              {group.closed && <div className="mt-3">Group is closed</div>}
+              <div className="mt-3">Created: {moment.unix(group.timestamp).format('LLL')}</div>
             </div>
             <div className="col">
               <div className="text-left text-bold">Participants</div>
@@ -264,13 +272,16 @@ class Expenses extends Component {
                 </div>
               ))}
           </div>
-          <div className="row mt-4">
-            <div className="col">
-              <button className="btn btn-primary" onClick={this.addBill}>
-                Add
-              </button>
+          {!group.closed && (
+            <div className="row mt-4">
+              <div className="col">
+                <button className="btn btn-primary" onClick={this.addBill}>
+                  Add
+                </button>
+              </div>
             </div>
-          </div>
+          )}
+
           {this.state.addingBill && (
             <div className="Bill mt-4">
               <FormGroup row>

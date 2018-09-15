@@ -77,8 +77,9 @@ class Groups extends Component {
 
   getWithdrawButton(group) {
     if (group.closed) {
-      if (group.myBal === 0) {
-        return <span>Balance pulled</span>;
+      console.debug('group my bla', group, group.myBal, group.myBal === 0);
+      if ([0, '0'].includes(group.myBal)) {
+        return <span style={{ display: 'none' }}>Balance pulled</span>;
       }
 
       return (
@@ -134,11 +135,17 @@ class Groups extends Component {
           <div className="Group-single" key={groupIndex}>
             <h4 className="Group-single-title">{group.name}</h4>
             <div className="mt-4 Group-single-subtitle">
-              You have locked:{' '}
-              <span className="badge badge-primary">
-                {this.getBalanceLockedInGroup(group, this.defaultAccount)} DAI
-              </span>
-              <br />
+              {group.closed ? (
+                <span>Group is closed</span>
+              ) : (
+                <span>
+                  You have locked:{' '}
+                  <span className="badge badge-primary">
+                    {this.getBalanceLockedInGroup(group, this.defaultAccount)} DAI
+                  </span>
+                  <br />
+                </span>
+              )}
             </div>
 
             <div className="row text-center d-flex margin-auto Group-actions mt-4">
@@ -154,7 +161,6 @@ class Groups extends Component {
                 <i className="material-icons">receipt</i>
                 Expenses
               </Link>
-              {group.closed && <span style={{ display: 'none' }}>Group is closed</span>}
 
               {this.getCloseButton(group)}
             </div>
@@ -176,7 +182,7 @@ class Groups extends Component {
                     <i className="material-icons">info_outline</i>
                   </div>
                   <div className="widget-alert__text">
-                    Please make sure you have enough DAI to use application.
+                    You don&#39;t have enough DAI to use application.
                   </div>
                   <div className="widget-alert__action" onClick={this.handleGetTokens}>
                     GET TOKENS

@@ -13,6 +13,10 @@ class NavBar extends Component {
                 <b>DAI</b>
                 vide
               </Link>
+              &nbsp;
+              <span className="brand-subtitle">
+                share expenses with <b>confidence</b>
+              </span>
             </div>
             <div className="col-6 text-right dai-row">
               <div className="dai-button">

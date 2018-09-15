@@ -71,7 +71,7 @@ class FundGroup extends Component {
                     DAI Amount:{' '}
                   </Label>
                   <Col sm={10}>
-                    <Input type="text" name="Amount" placeholder="125" />
+                    <Input type="text" name="Amount" />
                   </Col>
                 </FormGroup>
                 <button className="btn btn-primary" type="submit">
