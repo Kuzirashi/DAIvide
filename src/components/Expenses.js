@@ -1,10 +1,8 @@
 /*eslint no-control-regex: "off"*/
 
 import React, { Component } from 'react';
-import SplitETHJSON from '../build/contracts/SplitETH.json';
-import { NETWORK_ID } from '../domain/config';
 import BigNumber from 'bignumber.js';
-import { Button, FormGroup, Input, Col } from 'reactstrap';
+import { FormGroup, Input, Col } from 'reactstrap';
 import $ from 'jquery';
 import BlockchainService from '../domain/BlockchainService';
 
@@ -50,7 +48,6 @@ class Expenses extends Component {
   constructor(props) {
     super(props);
 
-    this.handleSubmit = this.handleSubmit.bind(this);
     this.addBill = this.addBill.bind(this);
     this.submitNewBill = this.submitNewBill.bind(this);
     this.handleNewBillMemberChange = this.handleNewBillMemberChange.bind(this);
@@ -60,7 +57,7 @@ class Expenses extends Component {
       web3: props.web3,
       web3WH: props.web3WH,
       accounts: '',
-      channelID: this.props.match.params.channelID,
+      channelID: cleanAsciiText(this.props.match.params.channelID),
       expenses: []
     };
 
@@ -71,26 +68,14 @@ class Expenses extends Component {
     });
   }
 
-  async handleSubmit(event) {
-    let amount = this.state.web3.utils.toWei(event.target.Amount.value, 'Ether');
-    let to = event.target.To.value;
-    event.preventDefault();
-    event.target.reset();
-    this.state.web3.eth
-      .sendTransaction({
-        from: this.state.accounts[0],
-        to: to,
-        value: amount
-      })
-      .then(function() {
-        alert('Transaction successfully completed!');
-      });
-  }
-
   async componentDidMount() {
     console.log('ELID', this.state.channelID);
 
-    await this.setupContracts();
+    const accounts = await this.props.web3.eth.getAccounts();
+
+    this.setState({
+      accounts
+    });
 
     const group = await this.getGroupById(this.state.channelID);
 
@@ -101,25 +86,6 @@ class Expenses extends Component {
     });
 
     await this.getExpenses();
-  }
-
-  async setupContracts() {
-    const props = this.props;
-
-    const splitETHAddress = SplitETHJSON.networks[NETWORK_ID].address;
-    const splitETHABI = SplitETHJSON.abi;
-
-    const splitETH = new props.web3.eth.Contract(splitETHABI, splitETHAddress);
-    const splitETH_event = new props.web3WH.eth.Contract(splitETHABI, splitETHAddress);
-    splitETH_event.setProvider(props.web3WH.currentProvider);
-
-    const accounts = await this.props.web3.eth.getAccounts();
-
-    this.setState({
-      accounts,
-      splitETH,
-      splitETH_event
-    });
   }
 
   async getGroupById(name) {
@@ -209,20 +175,44 @@ class Expenses extends Component {
       };
 
       return (
-        <li key={i}>
-          {participantItem.address} - Balance:{' '}
-          {this.state.web3.utils.fromWei(participant.balance, 'ether')} DAI
-        </li>
+        <tr key={i}>
+          <td>{participantItem.address}</td>
+          <td>{this.state.web3.utils.fromWei(participant.balance, 'ether')} DAI</td>
+        </tr>
       );
     });
 
     return (
-      <div className="mt-5">
+      <div className="container white-container mt-5">
         <h3>{channelID}</h3>
-        <h4 className="mt-4">Participants:</h4>
-        <br />
-        <ul>{participantsItems}</ul>
-        <h4 className="mt-4">Bills</h4>
+
+        <div className="row mt-5">
+          <div className="col">
+            <div className="row">
+              <div className="text-left text-bold">Info</div>
+            </div>
+            <div className="row mt-3">Timeout: {group.timeout}</div>
+            <div className="row mt-2">Actions:</div>
+          </div>
+          <div className="col">
+            <div className="row">
+              <div className="text-left text-bold">Participants</div>
+            </div>
+            <div className="row mt-3">
+              <table className="table Participants-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Balance</th>
+                  </tr>
+                </thead>
+                <tbody>{participantsItems}</tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <h4 className="mt-4">Expenses</h4>
 
         <div className="mt-5">
           {bills &&
@@ -338,9 +328,9 @@ class Expenses extends Component {
                   ))}
               </tbody>
             </table>
-            <Button type="button" onClick={this.submitNewBill} className="small">
+            <button onClick={this.submitNewBill} className="btn btn-primary">
               Submit
-            </Button>
+            </button>
           </div>
         )}
         <br />

@@ -1,11 +1,16 @@
 export const KOVAN_NETWORK_ID = 42;
+export const PRIVATE_NETWORK_ID = 26;
 
-export const NETWORK_ID = KOVAN_NETWORK_ID;
+export const NETWORK_ID = PRIVATE_NETWORK_ID;
 
 export const ALL_ADDRESSES = {
   [KOVAN_NETWORK_ID]: {
     SPLITTER: '0xf478bf1ac8c337474c21f713e874d753c28c4c48',
     TOKEN: '0x375404e792a7fd8307330020b5c7c54cfc14b08f'
+  },
+  [PRIVATE_NETWORK_ID]: {
+    SPLITTER: '0x66b96ddd818bec4b76fe5fe5d8908f1cfc13e1b5',
+    TOKEN: '0x6779bbe971f45c44c84eb37a3cc6712533c70efd'
   }
 };
 

@@ -4,13 +4,14 @@ import SplitETHJSON from '../build/contracts/SplitETH.json';
 import { Row, Col } from 'reactstrap';
 import { Button, Form, FormGroup, Label, Input } from 'reactstrap';
 import $ from 'jquery';
+import toastr from 'toastr';
 import { cleanAsciiText, toWei } from './Expenses';
 import BlockchainService from '../domain/BlockchainService';
 
 import { Link } from 'react-router-dom';
 import SETokenJSON from '../build/contracts/SEToken.json';
 import { API_HOST } from './Expenses';
-import { NETWORK_ID } from '../domain/config';
+import { ADDRESSES } from '../domain/config';
 
 const SELECTED_OPTION = {
   ADD_GROUP: 1,
@@ -21,17 +22,17 @@ class Groups extends Component {
   constructor(props) {
     super(props);
 
-    this.handleNewChannel = this.handleNewChannel.bind(this);
+    this.showAddGroupView = this.showAddGroupView.bind(this);
     this.handleJoinChannel = this.handleJoinChannel.bind(this);
     this.handleCloseChannel = this.handleCloseChannel.bind(this);
     this.handleSubmitNewChannel = this.handleSubmitNewChannel.bind(this);
     this.handleSubmitJoinChannel = this.handleSubmitJoinChannel.bind(this);
     this.handlePullFundsFromChannel = this.handlePullFundsFromChannel.bind(this);
 
-    const splitETHAddress = SplitETHJSON.networks[NETWORK_ID].address;
+    const splitETHAddress = ADDRESSES.SPLITTER;
     const splitETHABI = SplitETHJSON.abi;
 
-    const SETAddress = SETokenJSON.networks[NETWORK_ID].address;
+    const SETAddress = ADDRESSES.TOKEN;
     const SETABI = SETokenJSON.abi;
 
     const splitETH = new props.web3.eth.Contract(splitETHABI, splitETHAddress);
@@ -68,27 +69,26 @@ class Groups extends Component {
     console.log(event.target.GroupName.value);
     event.preventDefault();
 
-    var _this = this;
-
-    var groupName = this.state.web3.utils.fromAscii(event.target.GroupName.value);
-    var addresses = [];
-    this.state.friends.forEach(function(element) {
+    const groupName = this.state.web3.utils.fromAscii(event.target.GroupName.value);
+    const addresses = [];
+    this.state.friends.forEach(element => {
       addresses.push(element.address);
     });
-    var tokenAddress = event.target.TokenAddress.value;
-    var expiry = event.target.Expiry.value;
+
+    const tokenAddress = event.target.TokenAddress.value;
+    const expiry = event.target.Expiry.value;
 
     const receipt = await this.state.splitETH.methods
       .createGroup(groupName, addresses, tokenAddress, expiry)
       .send({ from: this.state.accounts[0] });
 
-    //console.log(web3.utils.toAscii(receipt.events.GroupCreated.returnValues._name));
-    alert(
-      _this.state.web3.utils.toAscii(receipt.events.GroupCreated.returnValues._name) +
-        ' Successfully created!'
-    );
-    _this.setState({ selectedOption: 0 });
-    _this.getGroups();
+    const name = this.state.web3.utils.toAscii(receipt.events.GroupCreated.returnValues._name);
+    const message = `Group "${name}" successfully created!`;
+
+    toastr.success(message);
+
+    this.setState({ selectedOption: 0 });
+    this.getGroups();
 
     await this.postGroupToAPI(groupName, addresses.length);
 
@@ -113,33 +113,24 @@ class Groups extends Component {
   }
 
   async handleSubmitJoinChannel(event) {
-    //console.log(event.target.GroupName.value);
     event.preventDefault();
 
-    var _this = this;
+    const groupName = this.state.web3.utils.fromAscii(event.target.GroupName.value);
+    const user = event.target.User.value;
+    const amount = event.target.Amount.value;
 
-    var groupName = this.state.web3.utils.fromAscii(event.target.GroupName.value);
-    var user = event.target.User.value;
-    var amount = event.target.Amount.value;
+    await BlockchainService.joinGroup(groupName, user, amount);
 
-    await this.state.seToken.methods
-      .approve(this.state.splitETH._address, _this.state.web3.utils.toWei(amount, 'ether'))
-      .send({ from: this.state.accounts[0] })
-      .then(function() {
-        _this.state.splitETH.methods
-          .fundUser(groupName, user, _this.state.web3.utils.toWei(amount, 'ether'))
-          .send({ from: _this.state.accounts[0] })
-          .then(function() {
-            _this.setState({ selectedOption: 0 });
-            _this.getGroups();
-          });
-      });
+    this.setState({ selectedOption: 0 });
+    await this.getGroups();
+
+    toastr.success(`You have successfully joined the group.`);
   }
 
-  async handleNewChannel(event) {
-    //console.log(event.target.myValueInput.value);
+  async showAddGroupView(event) {
     event.preventDefault();
-    this.setState({ selectedOption: 1 });
+
+    this.setState({ selectedOption: SELECTED_OPTION.ADD_GROUP });
   }
 
   async handleJoinChannel(group) {
@@ -260,12 +251,7 @@ class Groups extends Component {
         <div className="Wallet Wallet-container container">
           <Row>
             <Col sm="12" md={{ size: 8, offset: 2 }}>
-              {/* {this.state.accounts[0]} (<EthBalanceDisplay web3={this.state.web3} web3WH={this.state.web3WH} />) */}
-            </Col>
-          </Row>
-          <Row>
-            <Col sm="12" md={{ size: 8, offset: 2 }}>
-              Create New Channel
+              Create new group
             </Col>
           </Row>
           <Row>
@@ -276,7 +262,7 @@ class Groups extends Component {
                     Group Name:{' '}
                   </Label>
                   <Col sm={10}>
-                    <Input type="text" name="GroupName" placeholder="My new group" />
+                    <Input type="text" name="GroupName" placeholder="Name" />
                   </Col>
                 </FormGroup>
 
@@ -333,7 +319,9 @@ class Groups extends Component {
                 </FormGroup>
                 <FormGroup check row>
                   <Col sm={{ size: 12, offset: 0 }}>
-                    <Button>Create new Channel</Button>
+                    <button className="btn btn-primary" disabled={this.state.friends.length < 2}>
+                      Submit
+                    </button>
                   </Col>
                 </FormGroup>
               </Form>
@@ -440,6 +428,7 @@ class Groups extends Component {
 
     return (
       <button className="btn btn-danger" onClick={() => this.handleCloseChannel(group.name)}>
+        <i className="material-icons">close</i>
         Close
       </button>
     );
@@ -468,12 +457,16 @@ class Groups extends Component {
 
   renderGroupList() {
     return (
-      <div className="Groups">
+      <div className="Groups w-100">
         {this.state.groups.map((group, groupIndex) => (
           <div className="Group-single" key={groupIndex}>
-            <h4>{group.name}</h4>
-            <div className="mt-4">
-              You have locked: {this.getBalanceLockedInGroup(group, this.defaultAccount)} DAI <br />
+            <h4 className="Group-single-title">{group.name}</h4>
+            <div className="mt-4 Group-single-subtitle">
+              You have locked:{' '}
+              <span className="badge badge-primary">
+                {this.getBalanceLockedInGroup(group, this.defaultAccount)} DAI
+              </span>
+              <br />
             </div>
             <div className="row text-center d-flex margin-auto Group-actions mt-4">
               {group.closed ? (
@@ -483,11 +476,13 @@ class Groups extends Component {
                   className="btn btn-primary"
                   onClick={() => this.handleJoinChannel(group.name)}
                 >
+                  <i className="material-icons">attach_money</i>
                   Add Balance
                 </button>
               )}
               <Link to={'/expenses/' + group.name} className="btn btn-primary">
-                Manage
+                <i className="material-icons">receipt</i>
+                Expenses
               </Link>
               {this._getActions(group)}
             </div>
@@ -499,16 +494,27 @@ class Groups extends Component {
 
   render() {
     return (
-      <div className="NewChannel-Container">
-        {this.renderGroupList()}
+      <div className="NewChannel-Container container">
+        <div className="row">
+          <div className="widget-alert mb-5 w-100">
+            <div className="widget-alert__icon">
+              <i className="material-icons">info_outline</i>
+            </div>
+            <div className="widget-alert__text">
+              Please use Kovan network and note this is an alpha version.
+            </div>
+          </div>
 
-        <div className="text-right mt-5">
-          <button className="btn btn-primary" onClick={this.handleNewChannel}>
-            Create new group
-          </button>
+          {this.renderGroupList()}
+
+          <div className="text-right mt-20px">
+            <button className="btn btn-primary" onClick={this.showAddGroupView}>
+              Create new group
+            </button>
+          </div>
+
+          {this.renderSelectedOption()}
         </div>
-
-        {this.renderSelectedOption()}
       </div>
     );
   }

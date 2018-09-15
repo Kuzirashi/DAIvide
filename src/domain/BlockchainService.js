@@ -16,9 +16,10 @@ class BlockchainService {
     this.web3 = new Web3(Web3.givenProvider || 'http://kovan.infura.io');
     this.web3WH = new Web3();
 
-    const eventProvider = new Web3.providers.WebsocketProvider(
+    const eventProvider = new Web3.providers.HttpProvider(
       //  'wss://kovan.infura.io/websockets'
-      'wss://rarely-suitable-shark.quiknode.io/87817da9-942d-4275-98c0-4176eee51e1a/aB5gwSfQdN4jmkS65F1HyA==/'
+      // 'wss://rarely-suitable-shark.quiknode.io/87817da9-942d-4275-98c0-4176eee51e1a/aB5gwSfQdN4jmkS65F1HyA==/'
+      'http://localhost:8545'
     );
 
     this.web3WH.setProvider(eventProvider);
@@ -55,6 +56,7 @@ class BlockchainService {
   async _initialize() {
     await this.updateAccounts();
     await this.updateCurrentBlock();
+    await this.setupUpdateGroupCreatedEventsWatch();
 
     this._initializationPromiseResolver();
   }
@@ -75,9 +77,10 @@ class BlockchainService {
   async getGroupCreatedEvents() {
     await this.updateCurrentBlock();
 
-    const lastCacheFetchedBlock =
-      window.localStorage.getItem('_groupCreatedEventsLastFetchedBlock') || 0;
-    const cachedEvents = window.localStorage.getItem('_groupCreatedEvents');
+    const GROUP_CREATED_EVENTS_KEY = `${NETWORK_ID}_groupCreatedEvents`;
+    const GROUP_CREATED_EVENTS_LAST_FETCHED_BLOCK_KEY = this._getCachedGroupCreatedEventsLastFetchedBlockKey();
+
+    const cachedEvents = window.localStorage.getItem(GROUP_CREATED_EVENTS_KEY);
 
     if (cachedEvents) {
       this._groupCreatedEvents = JSON.parse(cachedEvents);
@@ -86,14 +89,22 @@ class BlockchainService {
     }
 
     this._groupCreatedEvents = await this.splitETH_event.getPastEvents('GroupCreated', {
-      fromBlock: lastCacheFetchedBlock,
+      fromBlock: this._getCachedGroupCreatedEventsLastFetchedBlock(),
       toBlock: 'latest'
     });
 
-    window.localStorage.setItem('_groupCreatedEvents', JSON.stringify(this._groupCreatedEvents));
-    window.localStorage.setItem('_groupCreatedEventsLastFetchedBlock', this.currentBlock);
+    window.localStorage.setItem(GROUP_CREATED_EVENTS_KEY, JSON.stringify(this._groupCreatedEvents));
+    window.localStorage.setItem(GROUP_CREATED_EVENTS_LAST_FETCHED_BLOCK_KEY, this.currentBlock);
 
     return this._groupCreatedEvents;
+  }
+
+  _getCachedGroupCreatedEventsLastFetchedBlock() {
+    return window.localStorage.getItem(this._getCachedGroupCreatedEventsLastFetchedBlockKey()) || 0;
+  }
+
+  _getCachedGroupCreatedEventsLastFetchedBlockKey() {
+    return `${NETWORK_ID}_groupCreatedEventsLastFetchedBlock`;
   }
 
   async getGroups(fetchParticipants = true) {
@@ -176,6 +187,26 @@ class BlockchainService {
 
         callback(tokenBalance);
       });
+  }
+
+  async setupUpdateGroupCreatedEventsWatch() {
+    const fromBlock = this._getCachedGroupCreatedEventsLastFetchedBlock();
+
+    console.log('setupUpdate', fromBlock, this.splitETH_event.events);
+
+    this.splitETH.events.allEvents({ fromBlock, toBlock: 'latest' }).on('data', async (a, b, c) => {
+      console.log('CALLBACK NEW DATA GROUP CREATED', a, b, c);
+    });
+  }
+
+  async joinGroup(groupName, user, amount) {
+    await this.seToken.methods
+      .approve(this.splitETH._address, this.web3.utils.toWei(amount, 'ether'))
+      .send({ from: this.defaultAccount });
+
+    await this.splitETH.methods
+      .fundUser(groupName, user, this.web3.utils.toWei(amount, 'ether'))
+      .send({ from: this.defaultAccount });
   }
 }
 
